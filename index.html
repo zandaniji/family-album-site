@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>亲称 · 家庭相簿 | Kinship · Family Album</title>
+    <meta
+      name="description"
+        content="翻开家庭相簿，一步步探索中文亲属称谓。Open a family album and explore Chinese kinship terms step by step."
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <!-- 京華老宋体 (album type) and 霞鹜文楷 (spoken notes): complete, range-split web fonts. -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@chinese-fonts/jhlst@3.0.0/dist/%E4%BA%AC%E8%8F%AF%E8%80%81%E5%AE%8B%E4%BD%93v2_002/result.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@chinese-fonts/lxgwwenkai@3.0.0/dist/LXGWWenKai-Regular/result.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <main class="album-stage">
+      <div
+        class="album-object"
+        aria-label="互动家庭相簿。选择一位亲属，或拖动纸页翻阅。Interactive family album. Choose a relative or drag the paper to turn the page."
+      >
+        <img class="album-cover" src="album/open-album.webp" alt="" draggable="false" />
+        <div class="album-paper-stage" id="album-stage">
+          <div class="album-paper-bed" aria-hidden="true">
+            <div class="page-material">
+              <img class="page-paper" src="album/open-album.webp" alt="" draggable="false" />
+            </div>
+          </div>
+          <div class="album-book-static" data-album-fallback="true" id="album-fallback"></div>
+        </div>
+        <div class="album-plaque">
+          <p class="sr-only" id="album-relation" aria-live="polite"></p>
+          <p class="sr-only" id="album-path" aria-live="polite"></p>
+          <!-- Page-turn tab, first on the left page's bottom line on the result spread. -->
+          <button type="button" class="album-action album-back album-tab ink-control" id="album-prev" hidden>
+            <span class="bilingual-copy"><span class="bilingual-zh" lang="zh-Hans">返回选人</span><span class="bilingual-en" lang="en">Back to choices</span></span>
+          </button>
+          <button type="button" class="album-action ink-control" id="album-undo" disabled>
+            <span class="bilingual-copy"><span class="bilingual-zh" lang="zh-Hans">撤销</span><span class="bilingual-en" lang="en">Undo</span></span>
+          </button>
+          <button type="button" class="album-reset ink-control" id="album-reset">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5.1 9.9C6.5 5.3 12.3 3.6 16.9 6.6c4.7 3.1 3.6 9.2-.4 11.6-3.3 2-7.7 1.1-9.1-.8" />
+              <path d="m4.8 4.7-.7 6.2 6.1-.5" />
+            </svg>
+            <span class="bilingual-copy">
+              <span class="bilingual-zh" lang="zh-Hans">重新开始</span>
+              <span class="bilingual-en" lang="en">Start over</span>
+            </span>
+          </button>
+        </div>
+      </div>
+      <div class="mobile-choice-panel" id="mobile-choice-panel" aria-label="选择下一位家人 / Choose the next family member"></div>
+    </main>
+    <script src="vendor/page-flip.browser.js"></script>
+    <script src="vendor/kinship.js"></script>
+    <script src="paper-turn.js"></script>
+    <script src="relationship-view.js"></script>
+    <script src="album-interactive.js"></script>
+  </body>
+</html>

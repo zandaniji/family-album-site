@@ -1,0 +1,27 @@
+# Local credentials and editor/system files
+.env
+.env.*
+!.env.example
+*.log
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
+node_modules/
+
+# Generated QA captures stay local; regenerate with qa-browser.mjs.
+qa-*.png
+
+# Earlier prototype and assets unused by the active version (kept locally).
+/album.js
+/album/frame-02-portrait.webp
+/album/frame-03-portrait.webp
+/album/frame-04-portrait.webp
+/album/portrait.jpg
+/album/paper-left.webp
+/avatars/grandfather.png
+/avatars/grandmother.png
+
+# Local delivery archives
+*.zip
+*.tar.gz

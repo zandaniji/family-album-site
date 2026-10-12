@@ -1,0 +1,2020 @@
+:root {
+  /* Type scale. Each step is its size when the album is 1368 px wide (a 1440 px
+     window) and scales with the album through container units; never below 11 px. */
+  --type-caption: max(11px, calc(11 * 100cqi / 1368));   /* English captions */
+  --type-label: max(11px, calc(13 * 100cqi / 1368));     /* field labels, small readouts */
+  --type-body: max(11px, calc(15 * 100cqi / 1368));      /* controls, notes, pinyin, glosses */
+  --type-title: max(11px, calc(18 * 100cqi / 1368));     /* photo captions, descriptions */
+  --type-heading: max(11px, calc(24 * 100cqi / 1368));   /* page headings, spoken words */
+  --type-display-sm: calc(32 * 100cqi / 1368);           /* several candidate terms */
+  --type-display: calc(44 * 100cqi / 1368);              /* the written term */
+  /* Tracking. */
+  --track-latin: 0.02em;
+  --track-cjk: 0.06em;
+  --track-loose: 0.08em;
+  --track-label: 0.14em;
+  /* Spacing scale for layout (applied with the grid pass). */
+  --space-1: calc(4 * 100cqi / 1368); --space-2: calc(8 * 100cqi / 1368);
+  --space-3: calc(12 * 100cqi / 1368); --space-4: calc(16 * 100cqi / 1368);
+  --space-5: calc(24 * 100cqi / 1368); --space-6: calc(32 * 100cqi / 1368);
+  --space-7: calc(48 * 100cqi / 1368);
+  /* Page grid, as fractions of each page. Book margins: wider at the outer
+     edge than at the spine. Choice photos fill their grid cells, and their
+     hand-placed tilt and offset carry the outer edges about 0.5% past the grid,
+     so text aligned with the photos uses --photo-inset. */
+  --page-top: 7%;
+  --page-bottom: 7%;
+  --page-outer: 6%;
+  --page-inner: 5%;
+  --photo-inset: -0.5%;
+  /* Ink on the album paper (measured paper luminance 0.55–0.65). */
+  --ink: #3a3228;          /* 7.2:1, primary text */
+  --ink-soft: #574330;     /* 5.3:1, secondary text */
+  --ink-faint: #6a5c4c;    /* 3.7:1, disabled and decorative only */
+  --ink-strong: #2a2018;   /* hover and pressed */
+  --pencil: #4b4743;       /* 5.3:1, graphite for pencilled hints */
+  --ink-stroke: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%208%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M1.5%205.2C14%203.6%2027%206.1%2041%204.7S70%203.3%2084%204.9%2096%204.2%2098.5%203.8%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%221.7%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E");
+  --color-room: #0a0907;
+  --color-room-glow: #2c2218;
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-caption: var(--ink);
+  --color-label: #b9a78c;
+  --color-label-dim: #7d6d58;
+  --color-paper-ink: var(--ink);
+  --color-print-back: #1c1814;
+  --color-print-mat: #8a8176;
+  --color-paper: #c9bda8;
+  /* 京華老宋体 and 霞鹜文楷 load as complete, range-split web fonts (index.html).
+     Offline, whole words fall back to one system serif rather than mixing. */
+  --font-display: "KingHwa_OldSong", "Noto Serif SC", "Songti SC", "SimSun", serif;
+  --font-hand: "KingHwa_OldSong", "Noto Serif SC", "Songti SC", serif;
+  --font-spoken: "LXGW WenKai", "KingHwa_OldSong", "Noto Serif SC", serif;
+  --font-serif: "Libre Baskerville", Georgia, "Times New Roman", serif;
+  --spacing-room: 1.5rem;
+  /* Room around the book; wider on desktop (below). */
+  --album-viewport-inset: 8px;
+  /* The album photograph is 1672 px wide; past this the paper softens and the
+     page-turn engine's 980 px page cap would detach the leaves from the photo. */
+  --album-max-width: 1760px;
+  /* The top leaf reaches the outer paper stack, leaving a narrow worn edge.
+     Fold geometry reads the same inset from CSS in paper-turn.js. */
+  --album-left-paper-inset: 0.02;
+  --album-left-paper-scale: calc((1 - var(--album-left-paper-inset)) / 0.9);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+html, body { margin: 0; }
+html,
+body {
+    background: var(--color-room);
+    color: var(--color-label);
+  }
+
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
+}
+
+
+.album-stage {
+  min-height: 100dvh;
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  justify-items: center;
+  gap: 0.85rem;
+  padding: 1.1rem 1rem 1.1rem;
+  background:
+    url("album/grain.svg") repeat,
+    radial-gradient(ellipse 80% 55% at 50% 42%, var(--color-room-glow) 0%, transparent 62%),
+    var(--color-room);
+  background-size: 256px 256px, auto, auto;
+  background-blend-mode: soft-light, normal, normal;
+  overflow-x: hidden;
+}
+
+.album-object {
+  position: relative;
+  /* Album text is sized in container units, so it keeps its proportion to the
+     pages: each size reads "N px when the album is 1368 px wide". */
+  container-type: inline-size;
+  width: min(94vw, calc((100dvh - 22.5rem) * 1.7768), var(--album-max-width));
+  max-width: 100%;
+  aspect-ratio: 1672 / 941;
+  filter:
+    drop-shadow(0 1.25rem 2.4rem rgb(0 0 0 / 0.72))
+    drop-shadow(0 0.35rem 0.7rem rgb(0 0 0 / 0.45));
+}
+
+.album-cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+/* The open photograph and every turning crop receive the same cooler patina. */
+.album-cover,
+.page-paper {
+  filter: saturate(0.72) brightness(1.025) contrast(0.985);
+}
+
+.album-paper-stage {
+  position: absolute;
+  left: 4.65%;
+  right: 3.9%;
+  top: 6.8%;
+  bottom: 5%;
+  z-index: 2;
+  cursor: grab;
+  isolation: isolate;
+  background: var(--color-paper);
+}
+
+.album-paper-stage::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 14px;
+  transform: translateX(-50%);
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgb(42 26 12 / 0.12) 38%,
+    rgb(22 12 6 / 0.34) 50%,
+    rgb(42 26 12 / 0.12) 62%,
+    transparent 100%
+  );
+}
+
+.album-paper-stage:active {
+  cursor: grabbing;
+}
+
+.album-paper-stage .stf__parent {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 0 !important;
+}
+
+.album-paper-stage .stf__wrapper {
+  height: 100% !important;
+  padding-bottom: 0 !important;
+}
+
+.album-paper-stage .stf__block {
+  width: 100%;
+  height: 100%;
+  background: var(--color-paper);
+}
+
+.album-book {
+  width: 100%;
+  height: 100%;
+}
+
+.album-book-static {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  height: 100%;
+}
+
+.album-book-static .album-page {
+  min-height: 0;
+}
+
+.album-page-source {
+  display: none;
+}
+
+.album-page {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--color-paper);
+  user-select: none;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.page-paper,
+.page-verso {
+  position: absolute;
+  inset: -2.5%;
+  width: 105%;
+  height: 105%;
+  object-fit: fill;
+  transform: scale(1.1);
+  pointer-events: none;
+  user-select: none;
+}
+
+.page-verso {
+  display: none;
+  z-index: 5;
+  opacity: 0.16;
+  mix-blend-mode: multiply;
+  filter: sepia(0.12) contrast(0.9) brightness(0.97);
+}
+
+.stf__item:not(.--simple) .page-verso {
+  display: block;
+}
+
+.stf__item {
+  outline: none;
+}
+
+.mount {
+  position: absolute;
+  margin: 0;
+  z-index: 2;
+}
+
+.mount-well {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  filter: drop-shadow(0.12rem 0.18rem 0.28rem rgb(40 24 8 / 0.42));
+}
+
+.mount-window {
+  position: absolute;
+  top: var(--window-t);
+  right: var(--window-r);
+  bottom: var(--window-b);
+  left: var(--window-l);
+  overflow: hidden;
+  z-index: 1;
+  background: var(--color-print-mat);
+}
+
+.mount-print {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  transform: scale(0.9);
+  transform-origin: center;
+  filter: sepia(0.32) contrast(1.08) saturate(0.72) brightness(0.96);
+}
+
+.mount-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+  user-select: none;
+}
+
+.mount-caption {
+  position: absolute;
+  left: 6%;
+  right: 8%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.08em;
+  color: var(--color-caption);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.mount-term {
+  font-family: var(--font-hand);
+  font-size: max(11px, calc(22.32 * 100cqi / 1368));
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: var(--track-loose);
+}
+
+.mount-meta {
+  font-family: var(--font-serif);
+  font-size: max(11px, calc(11.23 * 100cqi / 1368));
+  font-style: italic;
+  color: var(--color-ink-soft);
+  letter-spacing: var(--track-latin);
+}
+
+.frame-deckle {
+  --window-t: 11.5%;
+  --window-r: 16.49%;
+  --window-b: 11.31%;
+  --window-l: 16.4%;
+}
+
+.frame-tape {
+  --window-t: 13.56%;
+  --window-r: 19.78%;
+  --window-b: 13.75%;
+  --window-l: 19.59%;
+}
+
+.frame-corners {
+  --window-t: 12.5%;
+  --window-r: 18.46%;
+  --window-b: 12.81%;
+  --window-l: 18.56%;
+}
+
+.frame-two-tape {
+  --window-t: 12.44%;
+  --window-r: 12.37%;
+  --window-b: 12.69%;
+  --window-l: 21.46%;
+}
+
+.mount-inscription {
+  position: absolute;
+  margin: 0;
+  z-index: 4;
+  color: var(--color-paper-ink);
+  pointer-events: none;
+}
+
+.bilingual-copy {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: inherit;
+  justify-content: center;
+  gap: 0.08em;
+}
+.bilingual-zh,
+.bilingual-en { display: block; }
+.bilingual-en {
+  color: var(--color-ink-soft);
+  font-family: var(--font-serif);
+  font-size: 0.58em;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.2;
+  letter-spacing: var(--track-latin);
+  text-transform: none;
+}
+
+.inscribe-title {
+  top: 8.4%;
+  left: 16%;
+  font-family: var(--font-hand);
+  font-size: max(11px, calc(28.8 * 100cqi / 1368));
+  font-weight: 400;
+  letter-spacing: var(--track-label);
+  transform: rotate(-0.6deg);
+}
+
+.inscribe-year {
+  top: 14.6%;
+  left: 17%;
+  font-family: var(--font-hand);
+  font-size: max(11px, calc(15.84 * 100cqi / 1368));
+  font-weight: 400;
+  letter-spacing: var(--track-label);
+  color: var(--color-ink-soft);
+  transform: rotate(-0.4deg);
+}
+
+.inscribe-heading {
+  top: 7.2%;
+  left: 16%;
+  font-family: var(--font-hand);
+  font-size: var(--type-heading);
+  font-weight: 400;
+  letter-spacing: var(--track-label);
+  transform: rotate(-0.5deg);
+}
+
+.inscribe-sub {
+  top: 12%;
+  left: 16%;
+  font-family: var(--font-serif);
+  font-size: max(11px, calc(11.23 * 100cqi / 1368));
+  font-style: italic;
+  letter-spacing: var(--track-latin);
+  color: var(--color-ink-soft);
+  transform: rotate(-0.3deg);
+}
+
+.mount-cell {
+  width: 22.5%;
+}
+
+.mount-cell .mount-caption {
+  top: 102%;
+}
+
+.mount-cell .mount-term {
+  font-size: max(11px, calc(15.12 * 100cqi / 1368));
+  letter-spacing: var(--track-loose);
+}
+
+.mount-cell .mount-meta {
+  display: none;
+}
+
+.mount-cell-1 {
+  left: 18%;
+  top: 17.5%;
+  transform: rotate(-1.15deg);
+}
+
+.mount-cell-2 {
+  left: 52%;
+  top: 16%;
+  transform: rotate(1.35deg);
+}
+
+.mount-cell-3 {
+  left: 18%;
+  top: 55%;
+  transform: rotate(0.85deg);
+}
+
+.mount-cell-4 {
+  left: 52%;
+  top: 53.5%;
+  transform: rotate(-0.95deg);
+}
+
+.mount-large {
+  left: 18%;
+  top: 19.5%;
+  width: 40%;
+  transform: rotate(-1.2deg);
+}
+
+.mount-large .mount-caption {
+  top: 104%;
+  left: 8%;
+  width: 70%;
+  right: auto;
+}
+
+.mount-small {
+  left: 51%;
+  top: 49%;
+  width: 24%;
+  z-index: 3;
+  transform: rotate(3.6deg);
+}
+
+.mount-small .mount-caption {
+  top: 104%;
+  left: 4%;
+}
+
+.mount-large .mount-print {
+  filter: sepia(0.28) contrast(1.1) saturate(0.7) brightness(0.97);
+}
+
+.mount-small .mount-print {
+  filter: sepia(0.42) contrast(1.14) saturate(0.55) brightness(0.93);
+}
+
+.mount-cell-1 .mount-print {
+  filter: sepia(0.36) contrast(1.06) saturate(0.68) brightness(0.94);
+}
+
+.mount-cell-2 .mount-print {
+  filter: sepia(0.22) contrast(1.12) saturate(0.78) brightness(0.98);
+}
+
+.mount-cell-3 .mount-print {
+  filter: sepia(0.4) contrast(1.08) saturate(0.6) brightness(0.93);
+}
+
+.mount-cell-4 .mount-print {
+  filter: sepia(0.3) contrast(1.1) saturate(0.74) brightness(0.96);
+}
+
+.album-plaque {
+  text-align: center;
+  max-width: 36rem;
+  padding-bottom: 0.25rem;
+}
+
+.album-plaque h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: max(11px, calc(16.8 * 100cqi / 1368));
+  font-weight: 400;
+  letter-spacing: 0.32em;
+  color: var(--color-label);
+}
+
+.album-plaque p {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-serif);
+  font-size: var(--type-caption);
+  font-style: italic;
+  color: var(--color-label-dim);
+  letter-spacing: var(--track-latin);
+}
+
+/* Interactive relationship leaves. Keep controls within the photographed paper. */
+.album-page-choices .relation-grid {
+  position: absolute;
+  z-index: 4;
+  top: 18%;
+  left: 12%;
+  right: 10%;
+  bottom: 6%;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 1% 1.25%;
+}
+
+.relation-choice {
+  --choice-tilt: 0deg;
+  --choice-x: 0px;
+  --choice-y: 0px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-paper-ink);
+  font-family: var(--font-hand);
+  font-size: var(--type-body);
+  letter-spacing: var(--track-cjk);
+  text-align: center;
+  transform: translate(var(--choice-x), var(--choice-y));
+  transition: transform 160ms ease, filter 160ms ease;
+}
+.relation-choice .relation-choice-photo-wrap { rotate: var(--choice-tilt); }
+
+.relation-choice:nth-child(1) { --choice-tilt: -2deg; --choice-x: -2px; --choice-y: 4px; }
+.relation-choice:nth-child(2) { --choice-tilt: 1.5deg; --choice-y: -2px; }
+.relation-choice:nth-child(3) { --choice-tilt: -1deg; --choice-x: 2px; --choice-y: 3px; }
+.relation-choice:nth-child(4) { --choice-tilt: 2deg; --choice-y: -3px; }
+.relation-choice:nth-child(5) { --choice-tilt: 1.5deg; --choice-x: -2px; --choice-y: -3px; }
+.relation-choice:nth-child(6) { --choice-tilt: -2deg; --choice-x: 2px; --choice-y: 4px; }
+.relation-choice:nth-child(7) { --choice-tilt: 1deg; --choice-y: -2px; }
+.relation-choice:nth-child(8) { --choice-tilt: -1.5deg; --choice-x: 2px; --choice-y: 3px; }
+.relation-choice:nth-child(9) { --choice-tilt: -1.5deg; --choice-x: -3px; }
+.relation-choice:nth-child(10) { --choice-tilt: 2deg; --choice-x: 3px; --choice-y: 2px; }
+
+.relation-choice:hover {
+  transform: translate(var(--choice-x), calc(var(--choice-y) - 3px)) scale(1.04);
+  filter: brightness(1.05);
+}
+
+.relation-choice:active {
+  transform: translate(var(--choice-x), var(--choice-y)) scale(0.98);
+}
+.relation-choice.is-lifting {
+  transform: translate(var(--choice-x), calc(var(--choice-y) - 5px)) scale(1.04);
+  filter: drop-shadow(0 5px 5px rgb(42 26 12 / 0.22));
+}
+
+.relation-choice:focus-visible { outline: none; }
+.relation-choice:focus-visible .relation-choice-photo-wrap {
+  outline: 2px solid #705235;
+  outline-offset: 3px;
+}
+
+.relation-choice-photo-wrap {
+  position: relative;
+  display: block;
+  width: min(82%, 5.3rem);
+  aspect-ratio: 2 / 3;
+  flex: 0 0 auto;
+  filter: drop-shadow(1px 2px 3px rgb(42 26 12 / 0.26));
+  pointer-events: none;
+}
+
+.relation-choice-photo {
+  position: absolute;
+  top: 12%;
+  right: 17%;
+  bottom: 10%;
+  left: 17%;
+  width: 66%;
+  height: 78%;
+  object-fit: cover;
+  object-position: 50% 25%;
+  filter: sepia(0.24) saturate(0.72) contrast(1.02);
+  pointer-events: none;
+}
+
+.relation-choice-frame {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.relation-choice-name {
+  align-items: center;
+  white-space: nowrap;
+  line-height: 1.15;
+}
+.relation-choice-name .bilingual-en { font-size: var(--type-caption); }
+
+.flying-photo {
+  position: fixed;
+  z-index: 100;
+  margin: 0;
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.result-page-heading {
+  top: 8%;
+  left: 15%;
+  font-family: var(--font-hand);
+  font-size: var(--type-heading);
+  letter-spacing: var(--track-label);
+}
+.result-page-heading .bilingual-en,
+.inscribe-heading .bilingual-en {
+  margin-top: 0.18em;
+  font-size: var(--type-label);
+  letter-spacing: var(--track-latin);
+}
+
+.result-path-review {
+  position: absolute;
+  top: 16%;
+  left: 16%;
+  right: 10%;
+  z-index: 3;
+  margin: 0;
+  color: var(--color-ink-soft);
+  font-family: var(--font-hand);
+  font-size: max(11px, calc(14.4 * 100cqi / 1368));
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.result-path-review .bilingual-en {
+  margin-top: 0.3em;
+  font-size: 0.72em;
+}
+
+.result-tree-list {
+  position: absolute;
+  top: 26%;
+  right: 13%;
+  bottom: 8%;
+  left: 19%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0 0 0 1.7rem;
+  border-left: 1px solid rgb(92 65 38 / 0.4);
+  list-style: none;
+  overflow-y: auto;
+}
+
+.result-tree-person {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 4.2rem;
+  flex: 0 0 auto;
+  color: var(--color-paper-ink);
+}
+
+.result-tree-person::before {
+  content: "";
+  position: absolute;
+  left: -1.7rem;
+  top: 50%;
+  width: 1.25rem;
+  border-top: 1px solid rgb(92 65 38 / 0.4);
+}
+
+.result-tree-origin {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid rgb(92 65 38 / 0.5);
+  border-radius: 50%;
+  background: rgb(241 219 177 / 0.5);
+  font-family: var(--font-hand);
+  font-size: max(11px, calc(16 * 100cqi / 1368));
+}
+
+.result-tree-person .relation-choice-photo-wrap { width: 2.5rem; }
+.result-tree-labels { display: flex; flex-direction: column; gap: 0.15rem; }
+.result-tree-name { font-family: var(--font-hand); font-size: max(11px, calc(16.8 * 100cqi / 1368)); }
+.result-tree-relation { color: var(--color-ink-soft); font-family: var(--font-hand); font-size: max(10.88px, calc(10.88 * 100cqi / 1368)); }
+
+.result-term-content {
+  position: absolute;
+  top: 20%;
+  right: 13%;
+  bottom: 10%;
+  left: 14%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-x: hidden; /* the tilted spoken note may poke ~1px past the edge */
+  overflow-y: auto;
+  color: var(--color-paper-ink);
+}
+
+.result-term-eyebrow {
+  margin: 0 0 0.7rem;
+  font-family: var(--font-hand);
+  font-size: max(11px, calc(13.12 * 100cqi / 1368));
+  letter-spacing: var(--track-label);
+  color: var(--color-ink-soft);
+}
+
+.result-term {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--type-display);
+  line-height: 1.25;
+  letter-spacing: var(--track-loose);
+  overflow-wrap: anywhere;
+}
+.result-term .bilingual-en {
+  margin-top: 0.38rem;
+  color: var(--ink-soft);
+  font-size: var(--type-body);
+  font-style: italic;
+  line-height: 1.35;
+  letter-spacing: var(--track-latin);
+}
+
+.result-pinyin {
+  margin: 0.75rem 0 0;
+  color: var(--color-ink-soft);
+  font-family: var(--font-serif);
+  font-size: var(--type-body);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* Formal terms are typeset in album ink; spoken forms are a handwritten
+   blue-black note under the same column, so each pair reads top to bottom. */
+.result-terms {
+  --color-spoken: #2f4566;
+  display: grid;
+  grid-template-columns: auto repeat(var(--term-columns, 1), minmax(min-content, max-content));
+  column-gap: clamp(0.9rem, 2vw, 1.8rem);
+  align-items: baseline;
+  max-width: 100%;
+}
+.result-terms > .term-label { grid-column: 1; }
+.result-terms > .result-term,
+.result-terms > .result-spoken {
+  grid-column: 2 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: baseline;
+}
+.result-terms .result-term > .bilingual-zh,
+.result-terms .result-term > .result-pinyin { display: contents; }
+.result-terms .term-formal { grid-row: 1; white-space: nowrap; }
+.result-terms .term-formal.is-phrase { font-size: 0.6em; letter-spacing: var(--track-latin); white-space: normal; }
+/* Placed after the fixed term and pinyin rows, before the English gloss. */
+.result-terms .term-formal.term-alternative {
+  grid-row: auto;
+  grid-column: 1 / -1;
+  margin-top: 0.55rem;
+  font-size: 0.5em;
+}
+.term-alternative::before {
+  content: "或 · or";
+  margin-right: 0.7em;
+  color: var(--color-ink-soft);
+  font-family: var(--font-serif);
+  font-size: 0.62em;
+  font-style: italic;
+  letter-spacing: var(--track-latin);
+}
+.result-terms .result-pinyin > .term-cell { grid-row: 2; margin-top: 0.3rem; }
+.result-terms .result-term > .bilingual-en { grid-column: 1 / -1; margin-top: 0.45rem; }
+.result-terms .result-pinyin { letter-spacing: var(--track-latin); }
+.result-terms[data-count="3"],
+.result-terms[data-count="4"],
+.result-terms[data-count="5"] { column-gap: clamp(0.7rem, 1.4vw, 1.2rem); }
+.result-terms[data-count="3"] .result-term { font-size: var(--type-display-sm); }
+.result-terms[data-count="4"] .result-term,
+.result-terms[data-count="5"] .result-term { font-size: var(--type-heading); }
+
+.term-label {
+  align-self: center;
+  padding-right: clamp(0.6rem, 1.2vw, 1rem);
+  border-right: 1px solid rgb(92 65 38 / 0.32);
+  color: var(--color-ink-soft);
+  font-family: var(--font-hand);
+  font-size: var(--type-label);
+  letter-spacing: var(--track-label);
+  white-space: nowrap;
+}
+.term-label .bilingual-en { font-size: var(--type-caption); font-style: italic; letter-spacing: var(--track-latin); }
+.term-label-spoken {
+  margin-top: clamp(0.5rem, 1.3vh, 1.2rem);
+  border-right-style: dashed;
+  border-right-color: rgb(47 69 102 / 0.45);
+  color: var(--color-spoken);
+}
+.term-label-spoken .bilingual-en { color: var(--color-spoken); }
+
+.result-terms > .result-spoken { margin: clamp(0.5rem, 1.3vh, 1.2rem) 0 0; }
+.term-spoken { display: flex; flex-wrap: wrap; gap: 0.2rem 0.5rem; min-width: 0; }
+.term-spoken-word { display: inline-flex; flex-direction: column; gap: 0.15rem; }
+.term-spoken-words {
+  display: inline-block;
+  color: var(--color-spoken);
+  font-family: var(--font-spoken);
+  font-size: var(--type-heading);
+  line-height: 1.25;
+  letter-spacing: var(--track-cjk);
+  white-space: nowrap;
+  transform: rotate(-1.2deg);
+  transform-origin: left center;
+}
+.term-spoken-words::before { content: "「"; }
+.term-spoken-words::after { content: "」"; }
+.term-spoken-pinyin {
+  padding-left: 0.9em;
+  color: var(--color-spoken);
+  font-family: var(--font-serif);
+  font-size: var(--type-label);
+  font-style: italic;
+}
+.term-spoken-none { color: rgb(47 69 102 / 0.55); font-family: var(--font-serif); }
+/* Conditional advice: one line per condition, caption first. */
+.term-spoken-option {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.6rem;
+}
+.term-spoken-when {
+  min-width: 3.6em;
+  color: var(--color-spoken);
+  font-family: var(--font-spoken);
+  font-size: var(--type-label);
+  letter-spacing: var(--track-loose);
+}
+.term-spoken-when .bilingual-en { color: inherit; font-style: italic; }
+.term-spoken-byname {
+  color: var(--color-spoken);
+  font-family: var(--font-spoken);
+  font-size: var(--type-title);
+  letter-spacing: var(--track-cjk);
+  transform: rotate(-1.2deg);
+  transform-origin: left center;
+}
+.term-spoken-byname .bilingual-en { color: var(--color-spoken); font-style: italic; }
+@media (max-width: 700px) {
+  /* Narrow pages stack each label above its row instead of beside it. */
+  .result-terms { grid-template-columns: repeat(var(--term-columns, 1), minmax(min-content, max-content)); }
+  .result-terms > .term-label,
+  .result-terms > .result-term,
+  .result-terms > .result-spoken { grid-column: 1 / -1; }
+  .term-label { padding: 0 0 0.15rem; border-right: 0; white-space: normal; }
+  .term-label .bilingual-en { display: inline; margin-left: 0.4em; }
+  .term-label .bilingual-zh { display: inline; }
+}
+
+.result-description {
+  width: 100%;
+  margin: 2.2rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(92 65 38 / 0.25);
+  font-family: var(--font-hand);
+  font-size: var(--type-title);
+  line-height: 1.6;
+}
+.result-description .bilingual-en,
+.result-note .bilingual-en {
+  margin-top: 0.25em;
+  font-size: var(--type-label);
+  line-height: 1.45;
+}
+.result-note .bilingual-en { font-size: var(--type-caption); }
+
+.result-note {
+  margin: clamp(0.45rem, 1vh, 0.75rem) 0 0;
+  font-family: var(--font-hand);
+  font-size: var(--type-body);
+  color: var(--color-ink-soft);
+  line-height: 1.5;
+}
+
+.album-page-note {
+  position: absolute;
+  z-index: 4;
+  color: var(--color-ink-soft);
+  font-family: var(--font-hand);
+  font-size: max(11px, calc(12.96 * 100cqi / 1368));
+  line-height: 1.5;
+  letter-spacing: var(--track-cjk);
+}
+
+.album-page-note {
+  left: 17%;
+  right: 12%;
+  bottom: 8%;
+}
+
+.album-plaque { max-width: min(94vw, 48rem); }
+.album-plaque .album-path {
+  color: var(--color-label);
+  font-family: var(--font-hand);
+  font-style: normal;
+  font-size: max(11px, calc(13.12 * 100cqi / 1368));
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.album-path-tray {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  width: min(94vw, 48rem);
+  max-width: 100%;
+  margin: 0 auto 0.4rem;
+  padding: 0.45rem 0.65rem;
+  border-top: 1px solid rgb(185 167 140 / 0.24);
+  border-bottom: 1px solid rgb(185 167 140 / 0.24);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.path-origin {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid rgb(185 167 140 / 0.58);
+  border-radius: 50%;
+  color: var(--color-label);
+  font-family: var(--font-hand);
+  font-size: max(11px, calc(15.2 * 100cqi / 1368));
+}
+
+.album-path-cards,
+.path-step { display: flex; align-items: center; }
+.album-path-cards { gap: 0.45rem; }
+.path-step { gap: 0.45rem; flex: 0 0 auto; }
+.path-arrow { color: var(--color-label-dim); font-family: var(--font-serif); font-size: max(11px, calc(16 * 100cqi / 1368)); }
+.path-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  min-width: 3.2rem;
+  opacity: 1;
+  transition: opacity 120ms ease;
+}
+.path-card.is-arriving { opacity: 0; }
+.path-card .relation-choice-photo-wrap { width: 2.15rem; }
+.path-card-name {
+  color: var(--color-label);
+  font-family: var(--font-hand);
+  font-size: max(11px, calc(11.2 * 100cqi / 1368));
+  white-space: nowrap;
+}
+
+.album-reset .bilingual-en {
+  font-size: var(--type-caption);
+  letter-spacing: var(--track-latin);
+}
+
+.album-facts { min-height: 1.6rem; margin-top: 0.35rem; }
+.fact-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.2rem 0;
+}
+.fact-question {
+  margin-right: 0.3rem;
+  color: var(--color-label-dim);
+  font-family: var(--font-hand);
+  font-size: var(--type-body);
+}
+.fact-question { align-items: flex-start; }
+.fact-button.bilingual-copy { align-items: center; }
+.fact-question .bilingual-en,
+.fact-button .bilingual-en { font-size: var(--type-caption); }
+.fact-button {
+  border: 1px solid rgb(185 167 140 / 0.36);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-label);
+  font-family: var(--font-hand);
+  font-size: var(--type-body);
+  line-height: 1;
+  padding: 0.42rem 0.65rem;
+}
+.fact-button.is-selected {
+  background: rgb(185 167 140 / 0.22);
+  border-color: var(--color-label);
+}
+.fact-button:hover { background: rgb(185 167 140 / 0.16); }
+.fact-explanation { font-family: var(--font-hand) !important; font-style: normal !important; }
+.album-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  margin-top: 0.65rem;
+  padding: 0 1.1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-ink);
+  box-shadow: none;
+  font-family: var(--font-hand);
+  font-size: var(--type-body);
+  letter-spacing: var(--track-loose);
+  transition: color 160ms ease, transform 160ms ease;
+}.album-reset svg { transform: rotate(-12deg); transition: transform 180ms ease; }
+.album-reset:hover svg { transform: rotate(-40deg); }
+.album-reset:active { transform: translateY(1px) scale(0.98); }@media (prefers-reduced-motion: reduce) {
+  .album-reset, .album-reset svg { transition: none; }
+  .album-reset:hover svg, .album-reset:active { transform: none; }
+}
+.mobile-choice-panel { display: none; }
+
+@media (min-width: 701px) and (max-width: 1100px) {
+  .result-tree-list { top: 24%; bottom: 5%; gap: 0.1rem; }
+  .result-tree-person { min-height: 3.35rem; gap: 0.5rem; }
+  .result-tree-person .relation-choice-photo-wrap { width: 1.85rem; }
+  .result-tree-origin { width: 2rem; height: 2rem; font-size: max(11px, calc(12.8 * 100cqi / 1008)); }
+  .result-tree-name { font-size: max(11px, calc(13.12 * 100cqi / 1008)); }
+  .result-tree-relation { font-size: max(9.28px, calc(9.28 * 100cqi / 1008)); }
+}
+
+@media (max-width: 700px) {
+  .album-stage {
+    padding: var(--album-viewport-inset);
+    gap: 0.7rem;
+    align-content: start;
+    grid-template-rows: auto auto auto;
+  }
+
+  .album-object {
+    width: 100%;
+    margin-bottom: 52px;
+    filter:
+      drop-shadow(0 0.8rem 1.4rem rgb(0 0 0 / 0.7))
+      drop-shadow(0 0.2rem 0.4rem rgb(0 0 0 / 0.4));
+  }
+  .album-plaque {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 9;
+  }
+
+  .mount-term {
+    font-size: clamp(0.95rem, 4.4vw, 1.25rem);
+  }
+
+  .mount-meta {
+    font-size: clamp(0.58rem, 2.4vw, 0.7rem);
+  }
+
+  .mount-cell .mount-term {
+    font-size: clamp(0.78rem, 3.6vw, 1rem);
+  }
+
+  .inscribe-title,
+  .inscribe-heading {
+    font-size: clamp(1.05rem, 5.4vw, 1.5rem);
+  }
+
+  .inscribe-year,
+  .inscribe-sub {
+    font-size: clamp(0.7rem, 3.2vw, 0.92rem);
+  }
+
+  .relation-choice { font-size: clamp(0.43rem, 1.8vw, 0.68rem); }
+  .relation-choice-photo-wrap { width: min(66%, 1.45rem); }
+  .album-page-note { font-size: clamp(0.38rem, 1.65vw, 0.6rem); }
+  .album-page-choices .relation-grid { top: 21%; bottom: 5%; gap: 0 1%; }
+
+  .mobile-choice-panel {
+    display: block;
+    width: min(94vw, 24rem);
+    padding: 0.2rem 0.1rem;
+  }
+  .mobile-choice-title {
+    margin: 0 0 0.5rem;
+    color: var(--color-label);
+    font-family: var(--font-hand);
+    font-size: 0.88rem;
+    text-align: center;
+  }
+  .mobile-choice-title.bilingual-copy { align-items: center; }
+  .mobile-choice-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+  .mobile-choice {
+    min-height: 44px;
+    min-width: 0;
+    padding: 0 0.1rem;
+    border: 1px solid rgb(185 167 140 / 0.42);
+    border-radius: 3px;
+    background: rgb(185 167 140 / 0.1);
+    color: var(--color-label);
+    font-family: var(--font-hand);
+    font-size: clamp(0.75rem, 3.4vw, 0.9rem);
+  }
+  .mobile-choice.bilingual-copy {
+    align-items: center;
+    line-height: 1.05;
+  }
+  .mobile-choice .bilingual-en { font-size: 0.56em; }
+  .mobile-choice:hover, .mobile-choice:focus-visible {
+    background: rgb(185 167 140 / 0.24);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mount-well {
+    transition: none;
+  }
+}
+
+/* Fit the complete cover to the viewport without reserving a separate footer. */
+@media (min-width: 701px) {
+  :root { --album-viewport-inset: clamp(8px, 2.5vw, 40px); }
+  .album-stage {
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 0.15rem;
+    padding: var(--album-viewport-inset);
+  }
+  .album-object {
+    width: min(calc(100vw - 2 * var(--album-viewport-inset)), calc((100dvh - 2 * var(--album-viewport-inset)) * 1672 / 941), var(--album-max-width));
+  }
+}
+
+.album-plaque { width: auto; max-width: none; padding: 0; }
+.album-plaque { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.album-plaque.is-turning { visibility: hidden; }
+.album-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font-family: var(--font-hand);
+  font-size: var(--type-body);
+}
+.album-action .bilingual-en { font-size: var(--type-caption); }
+@media (max-width: 700px) {
+  .album-action, .album-reset { color: var(--color-label); }
+  .album-reset:hover { color: var(--color-paper); }
+  .album-action:focus-visible { outline-color: var(--color-label); }
+}
+.album-reset { margin-top: 0; }
+
+.album-chain {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+.chain-ink {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.chain-ink .ink-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  mix-blend-mode: multiply;
+}
+.chain-ink .ink-line-main {
+  stroke: rgb(91 58 31 / 0.68);
+  stroke-width: 0.31;
+}
+.chain-ink .ink-line-feather {
+  stroke: rgb(119 78 40 / 0.28);
+  stroke-width: 0.2;
+}
+.chain-person {
+  position: absolute;
+  left: var(--chain-x);
+  top: var(--chain-y);
+  width: var(--chain-width);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.12rem;
+  transform: rotate(var(--chain-angle));
+  filter: drop-shadow(1px 3px 3px rgb(59 38 20 / 0.27));
+}
+.chain-person .relation-choice-photo-wrap { width: 100%; max-width: none; }
+.chain-person.is-latest .relation-choice-photo-wrap { filter: drop-shadow(2px 3px 5px rgb(71 43 17 / 0.4)); }
+.chain-person-name {
+  position: relative;
+  z-index: 2;
+  color: var(--color-paper-ink);
+  font-family: var(--font-hand);
+  font-size: var(--type-body);
+  line-height: 1.1;
+  white-space: nowrap;
+  text-shadow: 0 1px rgb(236 214 173 / 0.7);
+}
+.chain-person-name.bilingual-copy { align-items: center; }
+.chain-person-name .bilingual-en {
+  margin-top: 0.15em;
+  font-size: 0.55em;
+}
+.chain-origin-photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  object-position: center;
+  border: 0.4rem solid #e0cfad;
+  border-bottom-width: 0.7rem;
+  filter: sepia(0.5) contrast(0.92);
+}
+.chain-person.is-arriving { opacity: 0; }
+.album-page-result-tree .album-chain { top: 13%; height: 83%; }
+.album-page-result-tree .chain-person-name { font-size: var(--type-body); }
+.album-page-result-tree .result-path-review { top: 15%; }
+
+.album-page-choices .relation-grid {
+  top: 17%;
+  right: 3%;
+  bottom: 8%;
+  left: 3%;
+}
+/* The same size as a short route's portraits on the left page (set by the album). */
+.album-page-choices .relation-choice-photo-wrap {
+  width: min(100%, var(--choice-photo-width, 100%));
+  max-width: none;
+}
+.album-page-choices .relation-choice {
+  gap: 0.25rem;
+  font-size: var(--type-title);
+}
+.album-page-choices .relation-choice-name .bilingual-en { font-size: var(--type-caption); }
+.album-facts {
+  position: absolute;
+  z-index: 5;
+  bottom: 3%;
+  left: 10%;
+  right: 8%;
+  min-height: 0;
+  margin: 0;
+  color: var(--color-paper-ink);
+}
+.fact-row { justify-content: center; gap: 0.25rem; margin: 0.15rem 0; }
+.fact-question { color: var(--color-ink-soft); font-size: var(--type-body); }
+.fact-button {
+  border-color: rgb(93 65 40 / 0.35);
+  color: var(--color-paper-ink);
+  font-size: var(--type-body);
+  padding: 0.32rem 0.5rem;
+}
+.fact-button.is-selected { border-color: #6f4a2b; background: rgb(111 74 43 / 0.16); }
+.fact-button:hover { background: rgb(111 74 43 / 0.12); }
+.fact-explanation { margin: 0.2rem 0; color: var(--color-ink-soft) !important; font-size: max(10.56px, calc(10.56 * 100cqi / 1368)) !important; }
+.album-page-result-term .album-facts { bottom: 4%; }
+.album-page-result-term .result-term-content { bottom: 20%; }
+
+@media (max-width: 700px) {
+  .album-page-choices .relation-grid { top: 20%; right: 3%; bottom: 3%; left: 3%; }
+  .album-page-choices .relation-choice-photo-wrap { width: 90%; }
+  .album-page-choices .relation-choice { gap: 0.05rem; font-size: 0.43rem; }
+  .album-facts { left: 3%; right: 3%; bottom: 0; }
+  .fact-row { gap: 0.05rem; }
+  .fact-question, .fact-button { font-size: 0.3rem; padding: 0.1rem; }
+  .chain-person-name { font-size: 0.42rem; }
+.chain-origin-photo { border-width: 0.15rem; border-bottom-width: 0.25rem; }
+}
+
+/* Fixed photo positions on a persistent exploration spread. */
+.chain-viewport,
+.tree-viewport {
+  position: absolute;
+  inset: 7% 10% 5% 8%;
+  z-index: 3;
+  container-type: inline-size;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(102 72 41 / 0.35) transparent;
+}
+.tree-viewport { top: 26%; bottom: 6%; }
+.chain-viewport .album-chain,
+.family-tree {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: calc(var(--canvas-height) * 1cqw);
+}
+.family-tree { width: calc(var(--canvas-width) * 1cqw); }
+.chain-viewport .chain-person,
+.tree-viewport .chain-person {
+  left: calc(var(--chain-x) * 1cqw);
+  top: calc(var(--chain-y) * 1cqw);
+  width: calc(var(--chain-width) * 1cqw);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-paper-ink);
+  transition: none;
+}
+.chain-person > * { pointer-events: none; }
+button.chain-person:hover .relation-choice-photo-wrap {
+  filter: drop-shadow(2px 4px 5px rgb(71 43 17 / 0.4));
+}
+button.chain-person:focus-visible { outline: none; }
+button.chain-person:focus-visible .relation-choice-photo-wrap {
+  outline: 2px solid var(--color-caption);
+  outline-offset: 3px;
+}
+.chain-person.is-future { opacity: 0.45; }
+.chain-person.is-arriving { opacity: 0; }
+.chain-owner-mark {
+  position: absolute;
+  inset: 12% 17% 11%;
+  display: grid;
+  place-items: center;
+  background: var(--color-paper);
+  color: var(--color-paper-ink);
+  font-family: var(--font-hand);
+  font-size: max(11px, calc(36 * 100cqi / 1368));
+}
+.chain-owner-mark.bilingual-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.chain-owner-mark .bilingual-en {
+  margin-top: -0.12em;
+  font-size: 0.32em;
+}
+.chain-ink .ink-line { stroke-dasharray: none; }
+.album-chain .chain-ink .ink-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.album-chain .chain-ink .ink-link.is-tracing .ink-line-main {
+  animation: trace-relationship 560ms ease-out both;
+}
+.album-chain .chain-ink .ink-link.is-tracing .ink-line-feather {
+  animation: trace-relationship 640ms ease-out both;
+}
+@keyframes trace-relationship {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.tree-viewport:focus-visible { outline: 1px dashed var(--color-caption); outline-offset: 3px; }
+.result-term:focus { outline: none; }.album-page-result-tree .result-path-review { max-height: 9%; overflow-y: auto; }
+/* Register each moving leaf to the original photograph. The photographed
+   cover, stacked edges, and binding remain visible beneath the paper. */
+.album-paper-stage,
+.album-paper-stage .stf__block,
+.album-page { background: transparent; }
+.album-paper-stage::before,
+.album-page::after { content: none; }
+.page-material {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.page-material::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: url("album/grain.svg") repeat;
+  background-size: 256px 256px;
+  mix-blend-mode: soft-light;
+  opacity: 0.16;
+}
+.album-page-left .page-material,
+.album-paper-bed .page-material {
+  clip-path: polygon(
+    calc(100% - 90% * var(--album-left-paper-scale)) 0,
+    calc(100% - 4% * var(--album-left-paper-scale)) 0,
+    100% 0.6%, 100% 99.3%,
+    calc(100% - 89% * var(--album-left-paper-scale)) 99.7%,
+    calc(100% - 90.6% * var(--album-left-paper-scale)) 98.7%,
+    calc(100% - 91% * var(--album-left-paper-scale)) 2%);
+}
+.album-page-right .page-material {
+  clip-path: polygon(0 0.7%, 98.3% 1.3%, 100% 2.5%, 100% 97.8%, 98.6% 99%, 0 99.4%);
+}
+.album-leaf > .album-page { position: absolute; inset: 0; width: 100%; height: 100%; transform-origin: 0 0; }
+.page-paper {
+  inset: auto;
+  top: -7.70975%;
+  width: 218.69874%;
+  height: 113.378685%;
+  max-width: none;
+  transform: none;
+}
+.album-page-left .page-paper,
+.album-paper-bed .page-paper {
+  /* Resample only the photographed paper about the fixed spine. The content
+     retains its coordinates; the old wide stack is covered, not repeated. */
+  width: calc(218.69874% * var(--album-left-paper-scale));
+  left: calc(100% - 110.169492% * var(--album-left-paper-scale));
+}
+.album-page-right .page-paper { left: -110.169492%; }
+.album-paper-bed {
+  position: absolute;
+  inset: 0 50% 0 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* A single contact shadow seats each photograph on the paper. */
+.chain-person,
+.chain-person.is-latest .relation-choice-photo-wrap { filter: none; }
+.relation-choice-photo-wrap {
+  filter: drop-shadow(0.5px 1px 0.6px rgb(44 29 15 / 0.35));
+  transition: filter 160ms ease, transform 160ms ease;
+}
+.relation-choice:hover {
+  transform: translate(var(--choice-x), calc(var(--choice-y) - 2px));
+  filter: none;
+}
+.relation-choice.is-lifting {
+  transform: translate(var(--choice-x), calc(var(--choice-y) - 4px));
+  filter: none;
+}
+.relation-choice:hover .relation-choice-photo-wrap,
+button.chain-person:hover .relation-choice-photo-wrap {
+  filter: drop-shadow(1px 3px 2px rgb(44 29 15 / 0.3));
+}
+.relation-choice:active {
+  transform: translate(var(--choice-x), var(--choice-y)) scale(0.985);
+}
+/* Paper labels and ink marks keep the controls in the album's material language. */
+@media (min-width: 701px) {
+  .album-stage {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .album-object { flex: 0 0 auto; }
+  .album-plaque {
+    position: absolute;
+    left: 27%;
+    bottom: 6%;
+    z-index: 9;
+    transform: translateX(-50%);
+  }
+  .chain-viewport { bottom: calc(5% + 24px); }
+  .inscribe-heading { font-size: var(--type-heading); }
+  .chain-person-name,
+  .album-page-result-tree .chain-person-name { font-size: var(--type-body); }
+  .album-facts { bottom: 4%; }
+  .fact-row { gap: 6px; }
+  .fact-question { font-size: var(--type-body); color: var(--ink-soft); }
+  .fact-button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    color: var(--ink);
+    font-size: var(--type-body);
+  } .album-page-result-term .result-term-content { top: 18%; bottom: 7%; }
+  .result-term-content > * { flex-shrink: 0; }
+  .result-term-content::before,
+  .result-term-content::after { content: ""; flex: 1 0 0; }
+  .result-term-content { justify-content: flex-start; }
+  .result-pinyin { font-size: var(--type-body); color: var(--ink-soft); }
+  .result-description { margin-top: clamp(0.7rem, 1.9vh, 1.6rem); padding-top: clamp(0.5rem, 1.1vh, 1rem); font-size: var(--type-title); }
+  .result-note { font-size: var(--type-body); color: var(--ink-soft); }
+  .result-path-review { font-size: max(11px, calc(14.4 * 100cqi / 1368)); color: var(--ink-soft); }
+  .album-page-result-term .result-facts {
+    position: static;
+    width: 100%;
+    margin-top: clamp(0.4rem, 1.2vh, 1rem);
+  }
+  .result-facts .fact-row { justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chain-person { transition: none; }
+  .album-chain .chain-ink .ink-line { animation: none; }
+}
+
+/* Identity belongs above the origin portrait, with unboxed text choices. */
+.album-page-profile > .identity-facts {
+  top: 2%;
+  bottom: auto;
+  left: 17%;
+  right: 8%;
+  margin: 0;
+}
+.identity-facts .fact-row {
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 4px;
+  margin: 0;
+}
+.identity-facts .fact-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-decoration: none;
+}
+.chain-viewport { top: calc(7% + 8px); }
+
+/* The entire relationship fits the paper first. Panning is opt-in via zoom. */
+.diagram-shell {
+  position: absolute;
+  inset: calc(7% + 12px) 8% calc(5% + 30px) 8%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+.tree-shell { top: 17%; }
+.diagram-shell .diagram-viewport {
+  position: relative;
+  inset: auto;
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  container-type: normal;
+  touch-action: none;
+  cursor: default;
+}
+.diagram-viewport.is-zoomed { cursor: grab; }
+.diagram-viewport.is-panning { cursor: grabbing; }
+.diagram-viewport:focus-visible { outline: 1px dashed var(--color-caption); outline-offset: 2px; }
+.diagram-viewport .diagram-canvas {
+  position: absolute;
+  inset: 0 auto auto 0;
+  transform-origin: 0 0;
+  margin: 0;
+}
+.diagram-canvas .chain-person {
+  left: calc(var(--chain-x) * 1px);
+  top: calc(var(--chain-y) * 1px);
+  width: calc(var(--chain-width) * 1px);
+  gap: 0.7px;
+  transform-origin: center;
+}
+.diagram-canvas .chain-person .chain-person-name {
+  font-size: 3.3px;
+  line-height: 1.2;
+  gap: 0.5px;
+  text-shadow: none;
+}
+.diagram-canvas .chain-person-name .bilingual-en { font-size: 2.5px; line-height: 1.15; }
+.diagram-canvas .chain-owner-mark { font-size: 9px; gap: 1px; }
+.diagram-canvas .chain-owner-mark .bilingual-en { font-size: 3px; }
+.diagram-canvas .relation-choice-photo-wrap { filter: drop-shadow(0.12px 0.25px 0.15px rgb(44 29 15 / 0.35)); }
+.diagram-canvas button.chain-person:hover .relation-choice-photo-wrap { filter: drop-shadow(0.2px 0.5px 0.4px rgb(44 29 15 / 0.35)); }
+.diagram-canvas button.chain-person:focus-visible .relation-choice-photo-wrap { outline-width: 0.4px; outline-offset: 0.7px; }
+.chain-viewport button.chain-person:not(.is-origin) { cursor: grab; }
+.chain-viewport.is-return-dragging button.chain-person { cursor: grabbing; }
+.chain-person.is-dragging-photo > .relation-choice-photo-wrap { opacity: 0.22; }
+.chain-person.is-erasing-person { opacity: 0; transition: opacity 380ms ease-in; }
+.album-chain .chain-ink .ink-link.is-erasing .ink-line { animation: erase-relationship 390ms ease-in both; }
+@keyframes erase-relationship { to { stroke-dashoffset: 1; } }
+.returning-photo {
+  position: fixed;
+  z-index: 9999;
+  margin: 0;
+  max-width: none;
+  pointer-events: none;
+  filter: drop-shadow(2px 5px 6px rgb(40 24 8 / 0.4));
+}
+.outbound-photo {
+  position: fixed;
+  z-index: 9999;
+  margin: 0;
+  max-width: none;
+  pointer-events: none;
+  filter: drop-shadow(2px 5px 6px rgb(40 24 8 / 0.4));
+}
+.relation-choice:not(:disabled) { cursor: grab; }
+.relation-choice.is-dragging-source { cursor: grabbing; }
+.relation-choice.is-dragging-source .relation-choice-photo-wrap { opacity: 0.3; }
+.chain-person.is-add-target .relation-choice-photo-wrap {
+  filter: drop-shadow(0 2px 3px rgb(71 43 17 / 0.42));
+}
+.relation-choice.is-return-target .relation-choice-photo-wrap {
+  transform: translateY(-3px);
+  filter: drop-shadow(1px 5px 4px rgb(44 29 15 / 0.38));
+}
+@media (prefers-reduced-motion: reduce) {
+  .chain-person.is-erasing-person { transition: none; }
+  .album-chain .chain-ink .ink-link.is-erasing .ink-line { animation: none; }
+}
+.diagram-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 44px;
+  color: var(--color-paper-ink);
+  font-family: var(--font-hand);
+}
+.diagram-controls button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 5px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: var(--type-title) var(--font-serif);
+}
+.diagram-controls button[data-diagram-action="fit"] { font: var(--type-label) var(--font-hand); }
+.diagram-controls small,
+.diagram-selection small { display: block; font: var(--type-caption)/1.3 var(--font-serif); }
+.diagram-selection { flex: 1; min-width: 0; font-size: var(--type-label); }
+.diagram-selection small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diagram-route-review {
+  flex: 0 0 auto;
+  color: var(--color-paper-ink);
+  font: var(--type-label)/1.5 var(--font-hand);
+  max-height: 32%;
+  overflow: auto;
+}
+.diagram-route-review summary { cursor: pointer; display: list-item; }
+.diagram-route-review summary .bilingual-zh { display: inline; }
+.diagram-route-review > .bilingual-en { font-size: var(--type-caption); }
+p.diagram-route-review { margin: 0; }
+.diagram-route-review summary .bilingual-en { display: inline; margin-left: 0.5em; font-size: var(--type-caption); }
+.diagram-route-review p { margin: 6px 0; overflow-wrap: anywhere; }
+.diagram-route-review p .bilingual-en { font-size: var(--type-caption); }
+@media (max-width: 700px) {
+  .album-page-profile > .identity-facts { left: 12%; right: 3%; }
+  .identity-facts .fact-row { gap: 0; }
+  .identity-facts .fact-button { padding: 0; font-size: 8px; }
+  .identity-facts .bilingual-en { font-size: 5px; }
+  .chain-viewport { top: calc(2% + 48px); }
+}
+
+/* One control style for every album control: an ink label on the paper.
+   Hover draws a hand-drawn ink stroke under the Chinese label; selection keeps
+   it drawn. Disabled controls use the faint ink rather than transparency. */
+@media (min-width: 701px) {
+  .ink-control {
+    border-color: transparent;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--ink);
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 160ms ease, translate 120ms ease;
+  }
+  .ink-control .bilingual-en,
+  .ink-control small { color: var(--ink-soft); }
+  .ink-control .bilingual-zh { position: relative; }
+  .ink-control .bilingual-zh::after {
+    content: "";
+    position: absolute;
+    left: -0.1em;
+    right: -0.1em;
+    bottom: -0.2em;
+    height: 0.26em;
+    background: currentColor;
+    -webkit-mask: var(--ink-stroke) center / 100% 100% no-repeat;
+    mask: var(--ink-stroke) center / 100% 100% no-repeat;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 220ms ease;
+    pointer-events: none;
+  }
+  .ink-control:hover:not(:disabled) { background: transparent; color: var(--ink-strong); }
+  /* Hover previews the stroke lightly; selection keeps it in full ink. */
+  .ink-control:hover:not(:disabled) .bilingual-zh::after { transform: scaleX(1); opacity: 0.5; }
+  .ink-control[aria-pressed="true"] .bilingual-zh::after { transform: scaleX(1); opacity: 1; }
+  /* Room for the stroke between the Chinese label and its English line. */
+  .ink-control.bilingual-copy,
+  .ink-control > .bilingual-copy { row-gap: 0.32em; }
+  .ink-control > small { margin-top: 0.3em; }
+  .diagram-controls .ink-control > .bilingual-zh:only-child::after { bottom: 0.08em; }
+  .ink-control[aria-pressed="true"] { border-color: transparent; background: transparent; color: var(--ink-strong); }
+  .ink-control:active:not(:disabled) { translate: 0 1px; }
+  .ink-control:disabled { color: var(--ink-faint); }
+  .ink-control:disabled .bilingual-en,
+  .ink-control:disabled small { color: var(--ink-faint); }
+}
+/* Focus and disabled behaviour hold at every width, including phones. */
+.ink-control:focus-visible { outline: 1px dashed var(--ink-soft); outline-offset: 3px; }
+.ink-control:disabled { cursor: default; opacity: 0.55; }
+@media (min-width: 701px) {
+  .ink-control:disabled { opacity: 1; }
+}
+@media (min-width: 701px) and (prefers-reduced-motion: reduce) {
+  .ink-control,
+  .ink-control .bilingual-zh::after { transition: none; }
+}
+
+/* Page grid (desktop). The single source for where page content sits:
+   every block aligns to the page margins above, the spread shares one top line
+   (identity, page headings, reveal) and one bottom line (footer and zoom). */
+@media (min-width: 701px) {
+  /* Left pages: outer margin on the left, spine margin on the right. */
+  /* Only as wide as its label and buttons, so it never covers the zoom controls. */
+  .album-page-profile > .identity-facts {
+    top: var(--page-top);
+    left: var(--page-outer);
+    right: auto;
+  }
+  /* The diagram stops above the footer's bottom line. */
+  .album-page-profile .chain-shell {
+    inset: calc(var(--page-top) + max(44px, var(--space-7)) + var(--space-3)) var(--page-inner) calc(var(--page-bottom) + 44px + var(--space-3)) var(--page-outer);
+  }
+  .album-page-result-tree .result-page-heading { top: var(--page-top); left: var(--page-outer); }
+  .album-page-result-tree .tree-shell {
+    inset: calc(var(--page-top) + var(--space-7) + var(--space-5)) var(--page-inner) calc(var(--page-bottom) + 44px + var(--space-3)) var(--page-outer);
+  }
+  /* Zoom sits at the diagram's top-right, on the band beside the identity row
+     or page heading; the bottom line belongs to the footer alone. */
+  .diagram-shell .diagram-controls {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + var(--space-2));
+    justify-content: flex-end;
+  }
+  /* English captions under choice photos wrap within their cell. */
+  .album-page-choices .relation-choice-name .bilingual-en { white-space: normal; text-wrap: balance; }
+  /* Footer actions sit on the left page's bottom line, in album coordinates:
+     the paper stage starts 4.65% in and each page is 45.725% of the album. */
+  .album-plaque {
+    left: calc(4.65% + 45.725% * 0.06 - 10px);
+    bottom: calc(5% + 88.2% * 0.07);
+    transform: none;
+  }
+
+  /* Right pages: spine margin on the left, outer margin on the right. */
+  .album-page-choices .relation-grid {
+    top: calc(var(--page-top) + var(--space-7) + var(--space-4));
+    left: var(--page-inner);
+    right: var(--page-outer);
+    bottom: var(--page-bottom);
+  }
+  .album-page-choices .inscribe-heading,
+  .album-page-result-term .result-page-heading {
+    top: var(--page-top);
+    left: calc(var(--page-inner) + var(--photo-inset));
+    transform: none;
+  }
+  /* The term sits under its heading instead of floating mid-page. */
+  .album-page-result-term .result-term-content {
+    top: calc(var(--page-top) + var(--space-7) + var(--space-5));
+    left: calc(var(--page-inner) + var(--photo-inset));
+    right: calc(var(--page-outer) + var(--photo-inset));
+    bottom: var(--page-bottom);
+  }
+  .album-page-result-term .result-term-content::before { content: none; }
+}
+
+/* The selected person is marked by the same ink stroke as a selected control.
+   The name readout stays for screen readers only. */
+/* Drawn beneath the whole caption, so it never strikes through the English. */
+.chain-person.is-inspected .chain-person-name { position: relative; }
+.chain-person.is-inspected .chain-person-name::after {
+  content: "";
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: -0.45em;
+  height: 0.32em;
+  background: currentColor;
+  -webkit-mask: var(--ink-stroke) center / 100% 100% no-repeat;
+  mask: var(--ink-stroke) center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+.diagram-selection {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+/* Page-turn tabs, on the spread's bottom line by the outer page corners:
+   揭晓称呼 at the right page's corner, and 返回选人 mirrored at the left page's,
+   first in the footer on the result spread. The inked dog-ear reaches into the
+   outer margin, so each label aligns with the page grid. */
+.album-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-hand);
+  font-size: var(--type-title);
+  line-height: 1.15;
+  letter-spacing: var(--track-loose);
+}
+.album-tab .bilingual-en { font-size: var(--type-caption); letter-spacing: var(--track-latin); }
+.album-reveal > .bilingual-copy { align-items: flex-end; text-align: right; }
+.album-back > .bilingual-copy { align-items: flex-start; }
+.album-reveal {
+  position: absolute;
+  z-index: 6;
+  right: calc(var(--page-outer) + var(--photo-inset) - 28 * 100cqi / 1368 - var(--space-2));
+  bottom: var(--page-bottom);
+}
+/* The footer starts 10px left of the margin for its buttons' padding. */
+.album-plaque > .album-back {
+  margin-left: calc(10px - 28 * 100cqi / 1368 - var(--space-2));
+  padding: 0 10px 0 0;
+}
+@media (min-width: 701px) {
+  .album-plaque { align-items: last baseline; }
+}
+.page-corner {
+  flex: none;
+  align-self: flex-end;
+  width: calc(28 * 100cqi / 1368);
+  height: calc(28 * 100cqi / 1368);
+  margin-bottom: 4px;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.album-back .page-corner { scale: -1 1; }
+.page-corner-flap { fill: currentColor; fill-opacity: 0.12; stroke: none; }
+.page-corner-flap,
+.page-corner-fold { transition: translate 200ms ease; }
+.album-tab:hover .page-corner-flap,
+.album-tab:hover .page-corner-fold { translate: -1.5px -1.5px; }
+@media (prefers-reduced-motion: reduce) {
+  .page-corner-flap, .page-corner-fold { transition: none; }
+}
+
+/* "我是 / I am…" labels the identity choice, in the style of the result page's questions. */
+.identity-facts .fact-question { margin-right: var(--space-2); }
+
+/* Latin letters inside Chinese copy (TA) use the album's Latin face. */
+.latin-run { font-family: var(--font-serif); font-size: 0.92em; letter-spacing: var(--track-latin); }
+
+/* Result hierarchy. Pinyin is upright and sits tight under its characters; the
+   English gloss is an italic line set apart beneath both. Each row label lines
+   up with the first line of what it labels: the term, or the spoken words. */
+.result-terms .result-pinyin > .term-cell,
+.term-spoken-pinyin {
+  font-style: normal;
+  letter-spacing: 0.04em;
+}
+.result-terms .result-pinyin > .term-cell { margin-top: var(--space-1); }
+.result-terms .result-term > .bilingual-en { margin-top: var(--space-3); font-style: italic; }
+.result-terms > .term-label { align-self: baseline; }
+
+/* Peers in the tree are labelled in ink at the size of the names. */
+.diagram-canvas .tree-link-label {
+  position: absolute;
+  left: calc(var(--chain-x) * 1px);
+  top: calc(var(--chain-y) * 1px);
+  align-items: center;
+  gap: 0.4px;
+  color: var(--ink-soft);
+  font-family: var(--font-hand);
+  font-size: 3.3px;
+  line-height: 1.2;
+  letter-spacing: var(--track-cjk);
+  white-space: nowrap;
+  transform: translate(-50%, calc(-100% - 2.4px));
+  pointer-events: none;
+}
+.diagram-canvas .tree-link-label .bilingual-en { font-size: 2.5px; line-height: 1.15; font-style: italic; }
+
+/* "我" is a print in the same mount as the portraits: a studio print with the
+   word lettered on it in pale ink. */
+.chain-owner-mark {
+  background: radial-gradient(ellipse 90% 70% at 50% 36%, #a39b8d 0%, #877e71 55%, #6b6358 100%);
+  color: #f3ead8;
+}
+.chain-owner-mark .bilingual-en,
+.ink-control .chain-owner-mark .bilingual-en { color: #e9dfca; }
+
+/* A pencilled first step beside "我", gone once the first photo is placed. */
+.diagram-canvas .chain-hint {
+  position: absolute;
+  left: 40px;
+  top: 10px;
+  width: 58px;
+  margin: 0;
+  align-items: flex-start;
+  gap: 1px;
+  color: var(--pencil);
+  font-family: var(--font-spoken);
+  font-size: 3.6px;
+  line-height: 1.4;
+  letter-spacing: var(--track-cjk);
+  rotate: -1.5deg;
+  pointer-events: none;
+}
+.diagram-canvas .chain-hint .bilingual-en { color: var(--pencil); font-size: 2.6px; font-style: italic; }
+
+/* The result inks in once its page has turned: the written term soaks into the
+   paper, its notes follow, and the spoken words are written left to right. */
+@media (prefers-reduced-motion: no-preference) {
+  .result-term-content.is-uninked > * { opacity: 0; }
+  .is-inking .term-formal { animation: ink-soak 1000ms cubic-bezier(.25, .6, .3, 1) both; }
+  .is-inking .term-formal:nth-child(2) { animation-delay: 140ms; }
+  .is-inking .term-formal:nth-child(3) { animation-delay: 280ms; }
+  .is-inking .term-formal:nth-child(n + 4) { animation-delay: 420ms; }
+  .is-inking .term-label-formal,
+  .is-inking .result-pinyin > .term-cell,
+  .is-inking .result-term > .bilingual-en { animation: ink-fade 600ms 520ms ease-out both; }
+  .is-inking .term-spoken-words { animation: ink-write 760ms 820ms ease-in-out both; }
+  .is-inking .term-label-spoken,
+  .is-inking .term-spoken-pinyin,
+  .is-inking .term-spoken-when,
+  .is-inking .term-spoken-byname,
+  .is-inking .term-spoken-none { animation: ink-fade 600ms 1000ms ease-out both; }
+  .is-inking > .result-description,
+  .is-inking > .result-note,
+  .is-inking > .result-facts { animation: ink-fade 700ms 1300ms ease-out both; }
+}
+@keyframes ink-soak {
+  0% { opacity: 0; filter: blur(5px); }
+  45% { opacity: 0.75; filter: blur(1.4px); }
+  100% { opacity: 1; filter: blur(0); }
+}
+@keyframes ink-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ink-write {
+  from { clip-path: inset(-25% 100% -25% -10%); }
+  to { clip-path: inset(-25% -10% -25% -10%); }
+}
